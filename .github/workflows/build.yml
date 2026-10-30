@@ -37,9 +37,14 @@ jobs:
 
   ios:
     name: iPhone IPA
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -switch "$(ls -d /Applications/Xcode_*.app | sort | tail -n 1)/Contents/Developer"
+          xcodebuild -version
 
       - run: brew install xcodegen
 
