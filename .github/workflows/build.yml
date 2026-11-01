@@ -1,69 +1,45 @@
 name: Сборка приложений
 on:
   workflow_dispatch:
-
 jobs:
   android:
     name: Android APK
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          sdk-version: "34"
-          packages: >-
-            platform-tools
-            build-tools;34.0.0
-            platforms;android-34
-
+      - uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.7"
-
       - name: Build APK
         run: gradle -p android assembleDebug --no-daemon
-
       - uses: actions/upload-artifact@v4
         with:
           name: Android-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
-
   ios:
     name: iPhone IPA
-    runs-on: macos-15
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
-
-      - name: Select Xcode
-        run: |
-          sudo xcode-select -switch "$(ls -d /Applications/Xcode_*.app | sort | tail -n 1)/Contents/Developer"
-          xcodebuild -version
-
       - run: brew install xcodegen
-
       - name: Generate project
         working-directory: ios
         run: xcodegen generate
-
       - name: Build
         working-directory: ios
         run: |
-          xcodebuild -project Numerology.xcodeproj -scheme Numerology -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
-
+          xcodebuild -project Numerology.xcodeproj -scheme Numerology -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
       - name: Pack IPA
         working-directory: ios
         run: |
           mkdir -p Payload
           cp -R build/Build/Products/Release-iphoneos/Numerology.app Payload/
           zip -qr Numerology-unsigned.ipa Payload
-
       - uses: actions/upload-artifact@v4
         with:
           name: iPhone-IPA
