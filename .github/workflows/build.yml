@@ -17,27 +17,25 @@ jobs:
           java-version: "17"
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          cmdline-tools-version: "latest"
-
-      - name: Install Android SDK packages
         shell: bash
         run: |
           set -euxo pipefail
 
           export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
+
+          if [ ! -x "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
+            curl -fsSL "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip" -o /tmp/cmdline-tools.zip
+            rm -rf "$ANDROID_SDK_ROOT/cmdline-tools/latest"
+            unzip -q /tmp/cmdline-tools.zip -d "$ANDROID_SDK_ROOT/cmdline-tools"
+            mv "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest"
+          fi
+
           export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
-
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-
-          ls -la "$ANDROID_SDK_ROOT" || true
-          ls -la "$ANDROID_SDK_ROOT/cmdline-tools" || true
-
           yes | sdkmanager --licenses >/dev/null || true
 
           sdkmanager --install \
+            "cmdline-tools;latest" \
             "platform-tools" \
             "platforms;android-34" \
             "build-tools;34.0.0"
