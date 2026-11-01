@@ -1,4 +1,5 @@
 name: Сборка приложений
+
 on:
   workflow_dispatch:
 
@@ -6,6 +7,7 @@ jobs:
   android:
     name: Android APK
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -18,10 +20,16 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           cmdline-tools-version: "latest"
-          packages: |
-            platform-tools
-            platforms;android-34
-            build-tools;34.0.0
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          set -e
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+
+          yes | sdkmanager --licenses
+          sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
       - uses: gradle/actions/setup-gradle@v4
         with:
@@ -38,9 +46,12 @@ jobs:
   ios:
     name: iPhone IPA
     runs-on: macos-14
+
     steps:
       - uses: actions/checkout@v4
-      - run: brew install xcodegen
+
+      - name: Install xcodegen
+        run: brew install xcodegen
 
       - name: Generate project
         working-directory: ios
@@ -49,7 +60,15 @@ jobs:
       - name: Build
         working-directory: ios
         run: |
-          xcodebuild -project Numerology.xcodeproj -scheme Numerology -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+          xcodebuild \
+            -project Numerology.xcodeproj \
+            -scheme Numerology \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
 
       - name: Pack IPA
         working-directory: ios
